@@ -1,0 +1,23 @@
+{
+    "name": "atabix/adyen",
+    "description": "Communicator for Adyen",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Paul Hage",
+            "email": "paul.hage@atabix.com"
+        }
+    ],
+    "minimum-stability": "dev",
+	"repositories": [
+           {"type": "vcs", "url":"git@github.com:atabix/atabase.git" }
+    ],
+    "require": {
+		 "atabix/atabase": "*"
+    },
+    "autoload": {
+         "psr-4": {
+         	  "Adyen\\": "src/Adyen"
+         }
+    }
+}
