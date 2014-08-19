@@ -1,0 +1,4 @@
+adyen
+=====
+
+Communicator for Adyen
