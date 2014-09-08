@@ -300,6 +300,7 @@ class Adyen {
         $rv['paymentAmount']        = $paymentAmount;
         $rv['shipBeforeDate']       = $shipBeforeDate;
         $rv['skinCode']             = $skinCode;
+        $rv['currencyCode']         = $currencyCode;
         $rv['merchantAccount']      = $merchantAccount;
         $rv['shopperEmail']         = $shopperEmail;
         $rv['shopperReference']     = $shopperReference;
