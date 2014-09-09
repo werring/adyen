@@ -32,15 +32,35 @@ class Adyen {
     public function __construct() {
         $this->live = true;
         $this->currencyCode = 'EUR';
-        $this->shipBeforeDate = strtotime("+5 day");
-        $this->sessionValidity = strtotime("+1 day");
+        $this->shipBeforeDate = date("Y-m-d", strtotime("+5 day"));
+        $this->sessionValidity = date(
+            DATE_ATOM,
+            mktime(
+                date("H") + 1, // IN HOURS
+                date("i"),
+                date("s"),
+                date("m"),
+                date("j"),
+                date("Y")
+            )
+        );
     }
     
     private function getUrl() {
         return $this->live ? 'https://live.adyen.com/hpp/pay.shtml' : 'https://test.adyen.com/hpp/pay.shtml';
     }
     
+    /* isLive */
+    public function setLive($live) {
+        $this->live = $live;
+        return $this;
+    }
     
+    public function getLive() {
+        return $this->live;
+    }
+    
+
     /* sharedSecret */
     public function setSharedSecret($sharedSecret) {
         $this->sharedSecret = $sharedSecret;
@@ -98,7 +118,7 @@ class Adyen {
     
     /* shipBeforeDate */
     public function setShipBeforeDate($shipBeforeDate) {
-        $this->shipBeforeDate = $shipBeforeDate;
+        $this->shipBeforeDate = date("Y-m-d", $shipBeforeDate);
         return $this;
     }
     
@@ -120,7 +140,17 @@ class Adyen {
     
     /* sessionValidity */
     public function setSessionValidity($sessionValidity) {
-        $this->sessionValidity = $sessionValidity;
+        $this->sessionValidity = date(
+            DATE_ATOM,
+            mktime(
+                date("H") + $sessionValidity,
+                date("i"),
+                date("s"),
+                date("m"),
+                date("j"),
+                date("Y")
+            )
+        );
         return $this;
     }
     
@@ -270,9 +300,9 @@ class Adyen {
         $merchantReference = $this->getMerchantReference();
         $paymentAmount = $this->getPaymentAmount();
         $currencyCode = $this->getCurrencyCode();
-        $shipBeforeDate = date("Y-m-d", $this->getShipBeforeDate());
+        $shipBeforeDate = $this->getShipBeforeDate();
         $skinCode = $this->getSkinCode();
-        $sessionValidity = date(DATE_ATOM, $this->getSessionValidity());
+        $sessionValidity = $this->getSessionValidity();
         $shopperEmail = $this->getShopperEmail();
         $shopperReference = $this->getShopperReference();
         $recurringContract = $this->getRecurringContract();
@@ -305,11 +335,11 @@ class Adyen {
         $rv['shopperEmail']         = $shopperEmail;
         $rv['shopperReference']     = $shopperReference;
         $rv['sessionValidity']      = $sessionValidity;
-        
-        if($recurringContract)  $rv['recurringContract']    = $recurringContract;
-        if($shopperStatement)   $rv['shopperStatement']     = $shopperStatement;
+        $rv['recurringContract']    = $recurringContract;        
+        $rv['shopperStatement']     = $shopperStatement;
+
+        if($orderData)          $rv['orderData']              = base64_encode(gzencode($orderData));
         if($countryCode)        $rv['countryCode']          = $countryCode;
-        if($orderData)          $rv['orderData']            = base64_encode(gzencode($orderData));
         if($shopperLocale)      $rv['shopperLocale']        = $shopperLocale;
         if($allowedMethods)     $rv['allowedMethods']       = $allowedMethods;
         if($blockedMethods)     $rv['blockedMethods']       = $blockedMethods;
@@ -335,6 +365,7 @@ class Adyen {
 	        . $this->getShopperReference()
 	        . $this->getRecurringContract()
 	        . $this->getShopperStatement()
+	        . $this->getAllowedMethods()
         ;
         
         return base64_encode(hash_hmac('sha1', $hmacData, $sharedSecret, true));
