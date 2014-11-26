@@ -27,8 +27,10 @@ class Adyen {
 	protected $allowedMethods;
 	protected $blockedMethods;
 	protected $offset;
-	
-    
+
+	protected $WSUser;
+	protected $WSUserPassword;
+   
     public function __construct() {
         $this->live = true;
         $this->currencyCode = 'EUR';
@@ -49,7 +51,11 @@ class Adyen {
     private function getUrl() {
         return $this->live ? 'https://live.adyen.com/hpp/pay.shtml' : 'https://test.adyen.com/hpp/pay.shtml';
     }
-    
+
+    private function getWSDLUrl() {
+        return $this->live ? 'https://pal-live.adyen.com/pal/adapter/httppost' : 'https://pal-test.adyen.com/pal/adapter/httppost';
+    }
+
     /* isLive */
     public function setLive($live) {
         $this->live = $live;
@@ -59,7 +65,20 @@ class Adyen {
     public function getLive() {
         return $this->live;
     }
+
+    public function setWSUserAuthentication($user, $password) {
+        $this->WSUser = $user;
+        $this->WSUserPassword = $password;
+        return $this;
+    }
     
+    public function getWSUser() {
+        return $this->WSUser;
+    }
+    
+    public function getWSUserPassword() {
+        return $this->WSUserPassword;
+    }
 
     /* sharedSecret */
     public function setSharedSecret($sharedSecret) {
@@ -370,6 +389,217 @@ class Adyen {
         
         return base64_encode(hash_hmac('sha1', $hmacData, $sharedSecret, true));
     }
+
+
+    // ! Recurring Functions
+    private function sendRecurringHTTPPost($request = array())
+    {
+        $WSUserAuthentication = $this->getWSUser() . ":" . $this->getWSUserPassword();
+        $WSDLUrl = $this->getWSDLUrl();
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $WSDLUrl);
+        curl_setopt($ch, CURLOPT_HEADER, false); 
+        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC  );
+        curl_setopt($ch, CURLOPT_USERPWD,$WSUserAuthentication); 
+        curl_setopt($ch, CURLOPT_POST,count($request));
+        curl_setopt($ch, CURLOPT_POSTFIELDS,http_build_query($request));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+        $result = curl_exec($ch);
+        
+        if ($result === false) {
+             $response = "Error: " . curl_error($ch);
+        } else {
+        	parse_str($result, $result);
+            $response = $result;
+        }
+        curl_close($ch);
+        
+        return $response;
+    }
+    
+
+    public function requestRecurringContract($contractRequest = "ONECLICK,RECURRING")
+    {
+        /**
+         * Request recurring contract details using HTTP Post
+         * 
+         * Once a shopper has stored RECURRING details with Adyen you are able to process
+         * a RECURRING payment. This file shows you how to retrieve the RECURRING contract(s) 
+         * for a shopper using HTTP Post. 
+         * 
+         * Please note: using our API requires a web service user. Set up your Webservice 
+         * user: Adyen Test CA >> Settings >> Users >> ws@Company. >> Generate Password >> Submit 
+         *  
+         * @link	5.Recurring/httppost/request-recurring-contract.php 
+         * @author	Created by Adyen - Payments Made Easy 
+         */
+        /**
+         * The request should contain the following variables:
+         * - action: Specifies which action on the API is required 
+         * - merchantAccount: The merchant account the payment was processed with.
+         * - shopperReference: The reference to the shopper. This shopperReference must be the same as the 
+         *   shopperReference used in the initial payment.
+         * - recurring->contract: This should be the same value as recurringContract in the payment where the recurring
+         *   contract was created. However if ONECLICK,RECURRING was specified initially
+         *   then this field can be either ONECLICK or RECURRING.
+         */
+         $request = array(
+            "action" => "Recurring.listRecurringDetails",
+            "recurringDetailsRequest.merchantAccount" => $this->getMerchantAccount(),  
+            "recurringDetailsRequest.shopperReference" => $this->getShopperReference(),
+            "recurringDetailsRequest.recurring.contract" => $contractRequest // i.e.: "ONECLICK","RECURRING" or "ONECLICK,RECURRING"
+         );
+     
+        /**
+         * The response will be a result with a list of zero or more details at least containing the following:
+         * - recurringDetailReference: The reference the details are stored under.
+         * - variant: The payment method (e.g. mc, visa, elv, ideal, paypal)
+         * - creationDate: The date when the recurring details were created.
+         */
+         return $this->sendRecurringHTTPPost($request);
+    }
+
+
+    public function submitRecurringPayment($recurringDetailReference = null)
+    {
+        /**
+         * Submit Recurring Payment using HTTP Post
+         * 
+         * You can submit a recurring payment using a specific recurringDetails record or by using the last created
+         * recurringDetails record. The request for the recurring payment is done using a paymentRequest.
+         * This file shows how a recurring payment can be submitted using our HTTP Post API. 
+         * 
+         * Please note: using our API requires a web service user. Set up your Webservice 
+         * user: Adyen Test CA >> Settings >> Users >> ws@Company. >> Generate Password >> Submit 
+         *  
+         * @link	5.Recurring/httppost/submit-recurring-payment.php 
+         * @author	Created by Adyen - Payments Made Easy
+         */
+         
+        /**
+          * A recurring payment can be submitted by sending a PaymentRequest 
+          * to the authorise action, the request should contain the following
+          * variables:
+          * - action: Specifies which action on the API is required 
+          * - selectedRecurringDetailReference: The recurringDetailReference you want to use for this payment. 
+          *   The value LATEST can be used to select the most recently used recurring detail. See request-recurring-contract.php 
+          *   on how to retrieve contract details for a shopper.
+          * - recurring: This should be RECURRING. 
+          * - merchantAccount: The merchant account the payment was processed with.
+          * - amount: The amount of the payment
+          * 	- currency: the currency of the payment
+          * 	- amount: the amount of the payment
+          * - reference: Your reference of this recurring transaction.
+          * - shopperEmail: The e-mail address of the shopper 
+          * - shopperReference: The shopper reference, i.e. the shopper ID
+          * - shopperInteraction: Should be ContAuth which specifies it's a RECURRING payment. 
+          * - fraudOffset: Numeric value that will be added to the fraud score (optional)
+          * - shopperIP: The IP address of the shopper (optional)
+          * - shopperStatement: Some acquirers allow you to provide a statement (optional)
+          */
+
+        $merchantAccount = $this->getMerchantAccount();
+        $merchantReference = $this->getMerchantReference();
+        $currencyCode = $this->getCurrencyCode();
+        $paymentAmount = $this->getPaymentAmount();
+        $shopperEmail = $this->getShopperEmail();
+        $shopperReference = $this->getShopperReference();
+
+        if(!$merchantAccount)       throw new AdyenException("No merchantAccount set.");
+        if(!$merchantReference)     throw new AdyenException("No merchantReference set.");
+        if(!$currencyCode)          throw new AdyenException("No Currency Code set.");
+        if(!$paymentAmount)         throw new AdyenException("No paymentAmount set.");
+        if($paymentAmount < 1)      throw new AdyenException("Invalid paymentAmount: zero."); 
+        if(!$shopperEmail)          throw new AdyenException("No shopperEmail set.");
+        if(!$shopperReference)      throw new AdyenException("No shopperReference set.");
+        
+        if (!isset($recurringDetailReference)) {
+            $recurringDetailReference = "LATEST";
+        }
+          
+        $request = array(
+            "action" => "Payment.authorise",
+            "paymentRequest.selectedRecurringDetailReference" => $recurringDetailReference,
+            "paymentRequest.recurring.contract" => "RECURRING",
+            "paymentRequest.merchantAccount" => $merchantAccount,
+            "paymentRequest.amount.currency" => $currencyCode,
+            "paymentRequest.amount.value" => $paymentAmount,
+            "paymentRequest.reference" => $merchantReference . "-" . date("Y-m-d-H:i:s"),
+            
+            "paymentRequest.shopperEmail" => $shopperEmail, 
+            "paymentRequest.shopperReference" => $shopperReference,
+            "paymentRequest.shopperInteraction" => "ContAuth",
+        ); 
+        /*  UNKNOWN
+        	"paymentRequest.fraudOffset" => "",
+        	"paymentRequest.shopperIP" => "ShopperIPAddress",
+        	"paymentRequest.shopperStatement" => "",
+        */
+
+
+
+
+    	/**
+    	 * If the recurring payment message passes validation a risk analysis will be done and, depending on the
+    	 * outcome, an authorisation will be attempted. You receive a
+    	 * payment response with the following fields:
+    	 * - pspReference: The reference we assigned to the payment;
+    	 * - resultCode: The result of the payment. One of Authorised, Refused or Error;
+    	 * - authCode: An authorisation code if the payment was successful, or blank otherwise;
+    	 * - refusalReason: If the payment was refused, the refusal reason.
+    	 */ 
+         return $this->sendRecurringHTTPPost($request);
+    }
+    
+
+
+    public function disableRecurringContract($recurringDetailReference = null)
+    {
+        /**
+         * Disable recurring contract using HTTP Post
+         * 
+         * Disabling a recurring contract (detail) can be done by calling the disable action 
+         * on the Recurring service with a request. This file shows how you can disable
+         * a recurring contract using HTTP Post. 
+         * 
+         * Please note: using our API requires a web service user. Set up your Webservice 
+         * user: Adyen Test CA >> Settings >> Users >> ws@Company. >> Generate Password >> Submit 
+         *  
+         * @link	5.Recurring/httppost/disable-recurring-contract.php 
+         * @author	Created by Adyen - Payments Made Easy
+         */
+         
+        /**
+         * The request should contain the following variables:
+         * - action: Specifies which action on the API is required 
+         * - merchantAccount: The merchant account the payment was processed with.
+         * - shopperReference: The reference to the shopper. This shopperReference must be the same as the 
+         *   shopperReference used in the initial payment. 
+         * - recurringDetailReference: The recurringDetailReference of the details you wish to 
+         *   disable. If you do not supply this field all details for the shopper will be disabled 
+         *   including the contract! This means that you can not add new details anymore.
+         */
+         $request = array(
+            "action" => "Recurring.disable",
+            "disableRequest.merchantAccount" => $this->getMerchantAccount(),  
+            "disableRequest.shopperReference" => $this->getShopperReference()
+         ); 
+         
+         if (isset($recurringDetailReference)) {
+             $request["disableRequest.recurringDetailReference"] = $recurringDetailReference;
+         }
+
+
+    	/**
+    	 * The response will be a result object with a single field response. If a single detail was 
+    	 * disabled the value of this field will be [detail-successfully-disabled] or, if all 
+    	 * details are disabled, the value is [all-details-successfully-disabled]. 
+    	 */
+         return $this->sendRecurringHTTPPost($request);
+    }
+    
 
 }
 
