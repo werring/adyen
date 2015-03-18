@@ -27,6 +27,7 @@ class Adyen {
 	protected $allowedMethods;
 	protected $blockedMethods;
 	protected $offset;
+	protected $shopper_interaction;
 
 	protected $WSUser;
 	protected $WSUserPassword;
@@ -48,11 +49,18 @@ class Adyen {
         );
     }
     
-    private function getUrl() {
+    private function getUrl()
+    {
         return $this->live ? 'https://live.adyen.com/hpp/pay.shtml' : 'https://test.adyen.com/hpp/pay.shtml';
     }
+    
+    public function getMotoUrl()
+    {
+        return $this->live ? 'https://callcenter-live.adyen.com/callcenter/action/callcenter.shtml' : 'https://callcenter-test.adyen.com/callcenter/action/callcenter.shtml';
+    }
 
-    private function getWSDLUrl() {
+    private function getWSDLUrl()
+    {
         return $this->live ? 'https://pal-live.adyen.com/pal/adapter/httppost' : 'https://pal-test.adyen.com/pal/adapter/httppost';
     }
 
@@ -286,15 +294,27 @@ class Adyen {
     public function getOffset() {
         return $this->offset;
     }
+
+    /* offset */
+    public function setShopperInteraction($value) {
+        $this->shopper_interaction = $value;
+        return $this;
+    }
     
-    
-    
-    
-    
-    public function getForm($formid='adyenform') {
+    public function getShopperInteraction() {
+        return $this->shopper_interaction;
+    }
+
+    public function getForm($formid = 'adyenform', $target = 'default') {
         $params=$this->getHPPParams();
         
-        $html='<form method="post" id="'.$formid.'" action="'.$this->getUrl().'">';
+        if ($target == "moto") {
+            $formUrl = $this->getMotoUrl();
+        } else {
+            $formUrl = $this->getUrl();
+        }
+        
+        $html='<form method="post" id="'.$formid.'" action="' . $formUrl . '">';
         foreach($params as $name=>$value) {
             $html.='<input type="hidden" name="'.$name.'" value="'.$value.'">';
         }
@@ -302,10 +322,15 @@ class Adyen {
         return $html;
     }
     
-	public function getPaymentURL() {
+	public function getPaymentURL($target = 'default') {
         $params=$this->getHPPParams();
 
-        $url = $this->getUrl().'?';
+        if ($target == "moto") {
+            $url = $this->getMotoUrl().'?';
+        } else {
+            $url = $this->getUrl().'?';
+        }
+
         foreach($params as $name=>$value) {
             $url .= "&".$name."=".urlencode($value);
         }
@@ -333,6 +358,7 @@ class Adyen {
         $allowedMethods = $this->getAllowedMethods();
         $blockedMethods = $this->getBlockedMethods();
         $offset = $this->getOffset();
+        $shopperInteraction = $this->getShopperInteraction();
 
         
         if(!$merchantReference)     throw new AdyenException("No merchantReference set.");
@@ -363,6 +389,7 @@ class Adyen {
         if($allowedMethods)     $rv['allowedMethods']       = $allowedMethods;
         if($blockedMethods)     $rv['blockedMethods']       = $blockedMethods;
         if($offset)             $rv['offset']               = $offset;
+        if($shopperInteraction) $rv['shopperInteraction']   = $shopperInteraction;
         
         $rv['merchantSig'] = $this->getMerchantSignature();
         
