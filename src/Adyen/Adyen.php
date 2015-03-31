@@ -52,9 +52,9 @@ class Adyen {
     public function setType($type)
     {
         if ($type == "moto") {
-            $this->type = $type;
+            return $this->type = $type;
         } else {
-            $this->type = "standard";            
+            return $this->type = "standard";            
         }
     }
     
