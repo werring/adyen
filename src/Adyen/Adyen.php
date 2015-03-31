@@ -52,10 +52,11 @@ class Adyen {
     public function setType($type)
     {
         if ($type == "moto") {
-            return $this->type = $type;
+            $this->type = $type;
         } else {
-            return $this->type = "standard";            
+            $this->type = "standard";            
         }
+        return $this;
     }
     
     private function getUrl()
