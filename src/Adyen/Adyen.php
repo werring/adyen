@@ -49,16 +49,24 @@ class Adyen {
         );
     }
     
-    private function getUrl()
+    public function setType($type)
     {
-        return $this->live ? 'https://live.adyen.com/hpp/pay.shtml' : 'https://test.adyen.com/hpp/pay.shtml';
+        if ($type == "moto") {
+            $this->type = $type;
+        } else {
+            $this->type = "standard";            
+        }
     }
     
-    public function getMotoUrl()
+    private function getUrl()
     {
-        return $this->live ? 'https://callcenter-live.adyen.com/callcenter/action/callcenter.shtml' : 'https://callcenter-test.adyen.com/callcenter/action/callcenter.shtml';
+        if ($this->type == "moto") {
+            return $this->live ? 'https://callcenter-live.adyen.com/callcenter/action/callcenter.shtml' : 'https://callcenter-test.adyen.com/callcenter/action/callcenter.shtml';
+        } else {
+            return $this->live ? 'https://live.adyen.com/hpp/pay.shtml' : 'https://test.adyen.com/hpp/pay.shtml';
+        }
     }
-
+    
     private function getWSDLUrl()
     {
         return $this->live ? 'https://pal-live.adyen.com/pal/adapter/httppost' : 'https://pal-test.adyen.com/pal/adapter/httppost';
@@ -305,14 +313,10 @@ class Adyen {
         return $this->shopper_interaction;
     }
 
-    public function getForm($formid = 'adyenform', $target = 'default') {
+    public function getForm($formid = 'adyenform') {
         $params=$this->getHPPParams();
         
-        if ($target == "moto") {
-            $formUrl = $this->getMotoUrl();
-        } else {
-            $formUrl = $this->getUrl();
-        }
+        $formUrl = $this->getUrl();
         
         $html='<form method="post" id="'.$formid.'" action="' . $formUrl . '">';
         foreach($params as $name=>$value) {
@@ -322,14 +326,10 @@ class Adyen {
         return $html;
     }
     
-	public function getPaymentURL($target = 'default') {
+	public function getPaymentURL() {
         $params=$this->getHPPParams();
 
-        if ($target == "moto") {
-            $url = $this->getMotoUrl().'?';
-        } else {
-            $url = $this->getUrl().'?';
-        }
+        $url = $this->getUrl().'?';
 
         foreach($params as $name=>$value) {
             $url .= "&".$name."=".urlencode($value);
