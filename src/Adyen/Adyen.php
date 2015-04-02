@@ -34,6 +34,7 @@ class Adyen {
    
     public function __construct() {
         $this->live = true;
+        $this->type = "standard";            
         $this->currencyCode = 'EUR';
         $this->shipBeforeDate = date("Y-m-d", strtotime("+5 day"));
         $this->sessionValidity = date(
