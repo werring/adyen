@@ -28,6 +28,8 @@ class Adyen {
 	protected $blockedMethods;
 	protected $offset;
 	protected $shopper_interaction;
+	protected $billingAddressType;
+	protected $deliveryAddressType;
 
 	protected $WSUser;
 	protected $WSUserPassword;
@@ -314,7 +316,27 @@ class Adyen {
     public function getShopperInteraction() {
         return $this->shopper_interaction;
     }
+    
+    /* billingAddressType */
+    public function setBillingAddressType($value) {
+	    $this->billingAddressType = $value;
+	    return $this;
+    }
 
+	public function getBillingAddressType() {
+	    return $this->billingAddressType;
+    }
+    
+    /* deliveryAddressType */
+    public function setDeliveryAddressType($value) {
+	    $this->deliveryAddressType = $value;
+	    return $this;
+    }
+
+	public function getDeliveryAddressType() {
+	    return $this->deliveryAddressType;
+    }
+    
     public function getForm($formid = 'adyenform') {
         $params=$this->getHPPParams();
         
@@ -414,6 +436,8 @@ class Adyen {
 	        . $this->getRecurringContract()
 	        . $this->getShopperStatement()
 	        . $this->getAllowedMethods()
+	        . $this->getBillingAddressType()
+	        . $this->getDeliveryAddressType()
         ;
         
         return base64_encode(hash_hmac('sha1', $hmacData, $sharedSecret, true));
