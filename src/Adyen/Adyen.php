@@ -30,6 +30,7 @@ class Adyen {
 	protected $shopper_interaction;
 	protected $billingAddressType;
 	protected $deliveryAddressType;
+	protected $shopperType;
 
 	protected $WSUser;
 	protected $WSUserPassword;
@@ -337,6 +338,16 @@ class Adyen {
 	    return $this->deliveryAddressType;
     }
     
+    /* shopperType */
+    public function setShopperType($value) {
+	    $this->shopperType = $value;
+	    return $this;
+    }
+
+	public function getShopperType() {
+	    return $this->shopperType;
+    }
+    
     public function getForm($formid = 'adyenform') {
         $params=$this->getHPPParams();
         
@@ -438,6 +449,7 @@ class Adyen {
 	        . $this->getAllowedMethods()
 	        . $this->getBillingAddressType()
 	        . $this->getDeliveryAddressType()
+	        . $this->getShopperType()
         ;
         
         return base64_encode(hash_hmac('sha1', $hmacData, $sharedSecret, true));
