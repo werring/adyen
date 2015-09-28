@@ -18,6 +18,7 @@ class Adyen {
     protected $sessionValidity;
     protected $shopperEmail;
     protected $shopperReference;
+    protected $openInvoiceLines;
     protected $recurringContract;
     protected $countryCode;
     protected $shopperStatement;
@@ -218,6 +219,16 @@ class Adyen {
     
     public function getShopperReference() {
         return $this->shopperReference;
+    }
+    
+    /* shopperReference */
+    public function setOpenInvoiceLines($openInvoiceLines) {
+        $this->openInvoiceLines = $openInvoiceLines;
+        return $this;
+    }
+    
+    public function getOpenInvoiceLines() {
+        return $this->openInvoiceLines;
     }
     
     
@@ -571,7 +582,8 @@ class Adyen {
         $paymentAmount = $this->getPaymentAmount();
         $shopperEmail = $this->getShopperEmail();
         $shopperReference = $this->getShopperReference();
-
+        $openInvoiceLines = $this->getOpenInvoiceLines();
+        
         if(!$merchantAccount)       throw new AdyenException("No merchantAccount set.");
         if(!$merchantReference)     throw new AdyenException("No merchantReference set.");
         if(!$currencyCode)          throw new AdyenException("No Currency Code set.");
@@ -596,15 +608,33 @@ class Adyen {
             "paymentRequest.shopperEmail" => $shopperEmail, 
             "paymentRequest.shopperReference" => $shopperReference,
             "paymentRequest.shopperInteraction" => "ContAuth",
-        ); 
+        );
+
+        if(count($openInvoiceLines) > 0) {
+            $openInvoice = array();
+            
+            $linenumber = 1;
+            foreach($openInvoiceLines as $line) {
+                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.ItemVATPercentage']  =  $line['ItemVATPercentage'];
+                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.currencyCode']       =  $line['currencyCode'];
+                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.description']        =  $line['description'];
+                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.itemAmount']         =  $line['itemAmount'];
+                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.itemVatAmount']      =  $line['itemVatAmount'];
+                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.lineReference']      =  $line['lineReference'];
+                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.numberOfItems']      =  $line['numberOfItems'];
+                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.vatCategory']        =  $line['vatCategory'];
+                $linenumber++;
+            }
+            $request['paymentRequest.openinvoicedata.numberOfLines'] = intval(count($openInvoiceLines));
+            
+            //$request['openInvoiceData'] = $openInvoice;
+        }
+        
         /*  UNKNOWN
         	"paymentRequest.fraudOffset" => "",
         	"paymentRequest.shopperIP" => "ShopperIPAddress",
         	"paymentRequest.shopperStatement" => "",
         */
-
-
-
 
     	/**
     	 * If the recurring payment message passes validation a risk analysis will be done and, depending on the
