@@ -8,6 +8,7 @@ namespace Adyen;
 class Adyen {
 
     protected $live;
+    protected $encoding;
     protected $sharedSecret;
     protected $merchantAccount;
     protected $merchantReference;
@@ -39,6 +40,7 @@ class Adyen {
     public function __construct() {
         $this->live = true;
         $this->type = "standard";            
+        $this->encoding = "sha1";            
         $this->currencyCode = 'EUR';
         $this->shipBeforeDate = date("Y-m-d", strtotime("+5 day"));
         $this->sessionValidity = date(
@@ -86,6 +88,11 @@ class Adyen {
     
     public function getLive() {
         return $this->live;
+    }
+
+    public function setEncoding($encoding) {
+        $this->encoding = $encoding;
+        return $this;
     }
 
     public function setWSUserAuthentication($user, $password) {
@@ -360,8 +367,11 @@ class Adyen {
     }
     
     public function getForm($formid = 'adyenform') {
-        $params=$this->getHPPParams();
-        
+        if ($this->encoding == "sha256") {
+            $params=$this->getSha256HPPParams();
+        } else {
+            $params=$this->getHPPParams();
+        }
         $formUrl = $this->getUrl();
         
         $html='<form method="post" id="'.$formid.'" action="' . $formUrl . '">';
@@ -372,8 +382,13 @@ class Adyen {
         return $html;
     }
     
-	public function getPaymentURL() {
-        $params=$this->getHPPParams();
+	public function getPaymentURL()
+	{
+        if ($this->encoding == "sha256") {
+            $params=$this->getSha256HPPParams();
+        } else {
+            $params=$this->getHPPParams();
+        }
 
         $url = $this->getUrl().'?';
 
@@ -438,9 +453,73 @@ class Adyen {
         if($shopperInteraction) $rv['shopperInteraction']   = $shopperInteraction;
         
         $rv['merchantSig'] = $this->getMerchantSignature();
-        
     	return $rv;
 	}
+
+    public function getSha256HPPParams()
+    {
+    	global $TEMPLATE, $ARGS, $CONFIG, $DB;
+        $hmacKey = $this->getSharedSecret();
+
+        $requiredParams = array(
+            "merchantAccount" => $this->getMerchantAccount(),      
+            "merchantReference" => $this->getMerchantReference(),      
+            "currencyCode" => $this->getCurrencyCode(),      
+            "paymentAmount" => $this->getPaymentAmount(),      
+            "sessionValidity" => $this->getSessionValidity(),      
+            "shipBeforeDate" => $this->getShipBeforeDate(),      
+            "shopperLocale" => $this->getShopperLocale(),      
+            "skinCode" => $this->getSkinCode()      
+        );
+        foreach ($requiredParams as $key => $value) {
+            if ($key == "paymentAmount" && $value < 1) {
+                throw new AdyenException("Invalid paymentAmount: zero.");
+            } elseif (!$value) {
+                throw new AdyenException("No {$key} set.");
+            }
+        }
+        
+        // If calculation goes wrong...check these params first ^DH
+        $optionalParams = array(
+            "shopperEmail" => $this->getShopperEmail(),      
+            "shopperReference" => $this->getShopperReference(),      
+            "recurringContract" => $this->getRecurringContract(),      
+            "countryCode" => $this->getCountryCode(),      
+            "shopperStatement" => $this->getShopperStatement(),      
+            "orderData" => $this->getOrderData(),      
+            "allowedMethods" => $this->getAllowedMethods(),      
+            "blockedMethods" => $this->getBlockedMethods(),      
+            "offset" => $this->getOffset(),      
+            "shopperInteraction" => $this->getShopperInteraction()
+        );
+
+    	$params = $requiredParams;
+        foreach ($optionalParams as $key => $value) {
+            if ($key == "orderData" && $value) {
+                $params[$key] = base64_encode(gzencode($value));
+            } elseif ($value) {
+                $params[$key] = $value;
+            }
+        }
+
+        // The character escape function
+        $escapeval = function($val) {
+         return str_replace(':','\\:',str_replace('\\','\\\\',$val));
+        };
+         
+        // Sort the array by key using SORT_STRING order
+        ksort($params, SORT_STRING);
+     
+        // Generate the signing data string
+        $signData = implode(":",array_map($escapeval,array_merge(array_keys($params), array_values($params))));
+         
+        // base64-encode the binary result of the HMAC computation
+        $merchantSig = base64_encode(hash_hmac('sha256',$signData,pack("H*" , $hmacKey),true));
+        $params["merchantSig"] = $merchantSig;
+
+        return $params;
+    }
+
     
     private function getMerchantSignature() {
         $sharedSecret = $this->getSharedSecret();
