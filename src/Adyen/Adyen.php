@@ -694,17 +694,17 @@ class Adyen {
             
             $linenumber = 1;
             foreach($openInvoiceLines as $line) {
-                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.ItemVATPercentage']  =  $line['ItemVATPercentage'];
-                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.currencyCode']       =  $line['currencyCode'];
-                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.description']        =  $line['description'];
-                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.itemAmount']         =  $line['itemAmount'];
-                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.itemVatAmount']      =  $line['itemVatAmount'];
-                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.lineReference']      =  $line['lineReference'];
-                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.numberOfItems']      =  $line['numberOfItems'];
-                $request['paymentRequest.openinvoicedata.line'.$linenumber.'.vatCategory']        =  $line['vatCategory'];
+                $request['paymentRequest.additionalData.openinvoicedata.line'.$linenumber.'.ItemVATPercentage']  =  $line['ItemVATPercentage'];
+                $request['paymentRequest.additionalData.openinvoicedata.line'.$linenumber.'.currencyCode']       =  $line['currencyCode'];
+                $request['paymentRequest.additionalData.openinvoicedata.line'.$linenumber.'.description']        =  $line['description'];
+                $request['paymentRequest.additionalData.openinvoicedata.line'.$linenumber.'.itemAmount']         =  $line['itemAmount'];
+                $request['paymentRequest.additionalData.openinvoicedata.line'.$linenumber.'.itemVatAmount']      =  $line['itemVatAmount'];
+                $request['paymentRequest.additionalData.openinvoicedata.line'.$linenumber.'.lineReference']      =  $line['lineReference'];
+                $request['paymentRequest.additionalData.openinvoicedata.line'.$linenumber.'.numberOfItems']      =  $line['numberOfItems'];
+                $request['paymentRequest.additionalData.openinvoicedata.line'.$linenumber.'.vatCategory']        =  $line['vatCategory'];
                 $linenumber++;
             }
-            $request['paymentRequest.openinvoicedata.numberOfLines'] = intval(count($openInvoiceLines));
+            $request['paymentRequest.additionalData.openinvoicedata.numberOfLines'] = intval(count($openInvoiceLines));
             
             //$request['openInvoiceData'] = $openInvoice;
         }
