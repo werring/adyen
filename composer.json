@@ -9,12 +9,6 @@
         }
     ],
     "minimum-stability": "dev",
-	"repositories": [
-           {"type": "vcs", "url":"git@github.com:atabix/atabase.git" }
-    ],
-    "require": {
-		 "atabix/atabase": "*"
-    },
     "autoload": {
          "psr-4": {
          	  "Adyen\\": "src/Adyen"
