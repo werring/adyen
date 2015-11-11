@@ -60,6 +60,7 @@ class Adyen {
     public function setBrand($brand)
     {
         $this->brand = $brand;
+        return $this;
     }
 
     public function getBrans()
