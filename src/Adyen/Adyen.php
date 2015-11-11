@@ -8,6 +8,7 @@ namespace Adyen;
 class Adyen {
 
     protected $live;
+    protected $brand;
     protected $encoding;
     protected $sharedSecret;
     protected $merchantAccount;
@@ -56,6 +57,18 @@ class Adyen {
         );
     }
     
+
+    public function setBrand($brand)
+    {
+        $this->brand = $brand;
+        return $this;
+    }
+
+    public function getBrans()
+    {
+        return $this->brand;
+    }
+
     public function setType($type)
     {
         if ($type == "moto") {
@@ -662,7 +675,7 @@ class Adyen {
         $shopperEmail = $this->getShopperEmail();
         $shopperReference = $this->getShopperReference();
         $openInvoiceLines = $this->getOpenInvoiceLines();
-        
+        $brand = $this->getBrand();
         if(!$merchantAccount)       throw new AdyenException("No merchantAccount set.");
         if(!$merchantReference)     throw new AdyenException("No merchantReference set.");
         if(!$currencyCode)          throw new AdyenException("No Currency Code set.");
@@ -678,6 +691,7 @@ class Adyen {
         $request = array(
             "action" => "Payment.authorise",
             "paymentRequest.selectedRecurringDetailReference" => $recurringDetailReference,
+            "paymentRequest.selectedBrand" => $brand,
             "paymentRequest.recurring.contract" => "RECURRING",
             "paymentRequest.merchantAccount" => $merchantAccount,
             "paymentRequest.amount.currency" => $currencyCode,
