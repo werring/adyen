@@ -534,14 +534,17 @@ class Adyen {
     }
 
     public static function verifySignature($data,$sharedSecret){
-        $hmacData =
-            $data['authResult'].
-            $data['pspReference'].
-            $data['merchantReference'].
-            $data['skinCode'];
-        if(isset($data['merchantReturnData'])) $hmacData .= $data['merchantReturnData'];
-        $signature = $data['merchantSig'];
-        return base64_encode(hash_hmac('sha1', $hmacData, $sharedSecret, true)) === $signature;
+         $signature = $data['merchantSig'];
+         $hmacData = '';
+         ksort($data);
+         $sign = [];
+         foreach($data as $key=>$value){
+             if(!in_array($key,['sig','merchantSig']) && substr($key,0,7) !=='ignore.') {
+                 $sign[$key] = str_replace(':','\\:',str_replace('\\','\\\\',$value));
+             }
+         }
+         $hmacData = implode(':',array_merge(array_keys($sign),array_values($sign)));
+         return base64_encode(hash_hmac('sha256', $hmacData, $sharedSecret, true)) === urldecode($signature);
      }
 
     private function getMerchantSignature() {
