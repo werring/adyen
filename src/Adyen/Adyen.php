@@ -57,6 +57,7 @@ class Adyen {
         );
     }
 
+
     public function setBrand($brand)
     {
         $this->brand = $brand;
@@ -532,6 +533,19 @@ class Adyen {
         return $params;
     }
 
+    public static function verifySignature($data,$sharedSecret){
+         $signature = $data['merchantSig'];
+         $hmacData = '';
+         ksort($data);
+         $sign = [];
+         foreach($data as $key=>$value){
+             if(!in_array($key,['sig','merchantSig']) && substr($key,0,7) !=='ignore.') {
+                 $sign[$key] = str_replace(':','\\:',str_replace('\\','\\\\',$value));
+             }
+         }
+         $hmacData = implode(':',array_merge(array_keys($sign),array_values($sign)));
+         return base64_encode(hash_hmac('sha256', $hmacData, $sharedSecret, true)) === urldecode($signature);
+     }
 
     private function getMerchantSignature() {
         $sharedSecret = $this->getSharedSecret();
@@ -675,8 +689,6 @@ class Adyen {
         $shopperReference = $this->getShopperReference();
         $openInvoiceLines = $this->getOpenInvoiceLines();
         $brand = $this->getBrand();
-
-
         if(!$merchantAccount)       throw new AdyenException("No merchantAccount set.");
         if(!$merchantReference)     throw new AdyenException("No merchantReference set.");
         if(!$currencyCode)          throw new AdyenException("No Currency Code set.");
