@@ -535,17 +535,28 @@ class Adyen {
 
     public static function verifySignature($data,$sharedSecret){
          $signature = $data['merchantSig'];
-         $hmacData = '';
-         ksort($data);
          $sign = [];
          foreach($data as $key=>$value){
              if(!in_array($key,['sig','merchantSig']) && substr($key,0,7) !=='ignore.') {
-                 $sign[$key] = str_replace(':','\\:',str_replace('\\','\\\\',$value));
+                 $sign[$key] = $value;
              }
          }
-         $hmacData = implode(':',array_merge(array_keys($sign),array_values($sign)));
-         return base64_encode(hash_hmac('sha256', $hmacData, $sharedSecret, true)) === urldecode($signature);
-     }
+
+        // The character escape function
+        $escapeval = function($val) {
+            return str_replace(':','\\:',str_replace('\\','\\\\',$val));
+        };
+
+        // Sort the array by key using SORT_STRING order
+        ksort($sign, SORT_STRING);
+
+        // Generate the signing data string
+        $signData = implode(":",array_map($escapeval,array_merge(array_keys($sign), array_values($sign))));
+
+        // base64-encode the binary result of the HMAC computation
+        $merchantSig = base64_encode(hash_hmac('sha256',$signData,pack("H*" , $sharedSecret),true));
+        return $merchantSig === urldecode($signature);
+    }
 
     private function getMerchantSignature() {
         $sharedSecret = $this->getSharedSecret();
