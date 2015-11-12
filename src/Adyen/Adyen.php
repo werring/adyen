@@ -68,7 +68,7 @@ class Adyen {
 
 
     public function getMerchantReturnData(){
-        return $this->merchantReturnData();
+        return $this->merchantReturnData;
     }
 
     public function setBrand($brand)
