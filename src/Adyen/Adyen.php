@@ -13,6 +13,7 @@ class Adyen {
     protected $sharedSecret;
     protected $merchantAccount;
     protected $merchantReference;
+    protected $merchantReturnData;
     protected $paymentAmount;
     protected $currencyCode;
     protected $shipBeforeDate;
@@ -58,13 +59,25 @@ class Adyen {
     }
 
 
+    public function setMerchantReturnData($data){
+        $this->merchantReturnData = $data;
+
+
+        return $this;
+    }
+
+
+    public function getMerchantReturnData(){
+        return $this->merchantReturnData();
+    }
+
     public function setBrand($brand)
     {
         $this->brand = $brand;
         return $this;
     }
 
-    public function getBrans()
+    public function getBrand()
     {
         return $this->brand;
     }
@@ -503,7 +516,8 @@ class Adyen {
             "allowedMethods" => $this->getAllowedMethods(),
             "blockedMethods" => $this->getBlockedMethods(),
             "offset" => $this->getOffset(),
-            "shopperInteraction" => $this->getShopperInteraction()
+            "shopperInteraction" => $this->getShopperInteraction(),
+            "merchantReturnData" => $this->getMerchantReturnData(),
         );
 
     	$params = $requiredParams;
