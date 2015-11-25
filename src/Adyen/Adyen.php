@@ -569,7 +569,7 @@ class Adyen {
 
         // base64-encode the binary result of the HMAC computation
         $merchantSig = base64_encode(hash_hmac('sha256',$signData,pack("H*" , $sharedSecret),true));
-        return $merchantSig === urldecode($signature);
+        return $merchantSig === $signature;
     }
 
     private function getMerchantSignature() {
