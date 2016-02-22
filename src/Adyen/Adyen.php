@@ -33,12 +33,16 @@ class Adyen {
 	protected $billingAddressType;
 	protected $deliveryAddressType;
 	protected $shopperType;
+	protected $force_url;
+	protected $show_form;
 
 	protected $WSUser;
 	protected $WSUserPassword;
    
     public function __construct() {
         $this->live = true;
+        $this->force_url = null;
+        $this->show_form = false;
         $this->type = "standard";            
         $this->encoding = "sha1";            
         $this->currencyCode = 'EUR';
@@ -66,8 +70,26 @@ class Adyen {
         return $this;
     }
     
+    // ! Debug-functions
+    public function showForm()
+    {
+        $this->show_form = true;
+        return $this;
+    }
+    
+    public function forceUrl($url)
+    {
+        $this->force_url = $url;
+        return $this;
+    }
+
+    // The API
     private function getUrl()
     {
+        if (isset($this->force_url)) {
+            return $this->force_url; 
+        }
+        
         if ($this->type == "moto") {
             return $this->live ? 'https://callcenter-live.adyen.com/callcenter/action/callcenter.shtml' : 'https://callcenter-test.adyen.com/callcenter/action/callcenter.shtml';
         } else {
@@ -376,9 +398,16 @@ class Adyen {
         
         $html='<form method="post" id="'.$formid.'" action="' . $formUrl . '">';
         foreach($params as $name=>$value) {
-            $html.='<input type="hidden" name="'.$name.'" value="'.$value.'">';
+            if ($this->show_form) {
+                $html.= '<label style="background-color:orange;width:400px;">' .$name.'</label> - <input type="text" name="'.$name.'" value="'.$value.'" style="width:400px"><br>';
+            } else {
+                $html.='<input type="hidden" name="'.$name.'" value="'.$value.'">';
+            }
         }
-        $html.='</form>';
+        if ($this->show_form) {
+            $html .= '<input type="submit" value="submit">';
+        }
+        $html .= '</form>';
         return $html;
     }
     
@@ -551,6 +580,8 @@ class Adyen {
     {
         $WSUserAuthentication = $this->getWSUser() . ":" . $this->getWSUserPassword();
         $WSDLUrl = $this->getWSDLUrl();
+        
+        var_dump($WSDLUrl, $WSUserAuthentication);
         
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $WSDLUrl);
