@@ -581,8 +581,6 @@ class Adyen {
         $WSUserAuthentication = $this->getWSUser() . ":" . $this->getWSUserPassword();
         $WSDLUrl = $this->getWSDLUrl();
         
-        var_dump($WSDLUrl, $WSUserAuthentication);
-        
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $WSDLUrl);
         curl_setopt($ch, CURLOPT_HEADER, false); 
