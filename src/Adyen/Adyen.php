@@ -35,6 +35,7 @@ class Adyen {
 	protected $shopperType;
 	protected $force_url;
 	protected $show_form;
+	protected $zero_auth_payments;
 
 	protected $WSUser;
 	protected $WSUserPassword;
@@ -43,6 +44,7 @@ class Adyen {
         $this->live = true;
         $this->force_url = null;
         $this->show_form = false;
+        $this->zero_auth_payments = false;
         $this->type = "standard";            
         $this->encoding = "sha1";            
         $this->currencyCode = 'EUR';
@@ -62,7 +64,7 @@ class Adyen {
     
     public function setType($type)
     {
-        if ($type == "moto") {
+        if ($type == "moto" || $type == "mobile") {
             $this->type = $type;
         } else {
             $this->type = "standard";            
@@ -92,6 +94,8 @@ class Adyen {
         
         if ($this->type == "moto") {
             return $this->live ? 'https://callcenter-live.adyen.com/callcenter/action/callcenter.shtml' : 'https://callcenter-test.adyen.com/callcenter/action/callcenter.shtml';
+        } elseif ($this->type == "mobile") {
+            return $this->live ? 'https://live.adyen.com/hpp/select.shtml' : 'https://test.adyen.com/hpp/select.shtml';
         } else {
             return $this->live ? 'https://live.adyen.com/hpp/pay.shtml' : 'https://test.adyen.com/hpp/pay.shtml';
         }
@@ -165,6 +169,12 @@ class Adyen {
     
     
     /* paymentAmount */
+    public function enableZeroAuthPayments()
+    {
+        $this->zero_auth_payments = true;
+        return $this;
+    }
+
     public function setPaymentAmount($paymentAmount) {
         $this->paymentAmount = intval(round($paymentAmount * 100, 0));
         return $this;
@@ -452,8 +462,9 @@ class Adyen {
 
         
         if(!$merchantReference)     throw new AdyenException("No merchantReference set.");
-        if(!$paymentAmount)         throw new AdyenException("No paymentAmount set.");
-        if($paymentAmount<1)        throw new AdyenException("Invalid paymentAmount: zero."); 
+        if(!$this->zero_auth_payments and !$paymentAmount) {
+            throw new AdyenException("Invalid paymentAmount: zero."); 
+        }
         if(!$shipBeforeDate)        throw new AdyenException("No shipBeforeDate set.");
         if(!$skinCode)              throw new AdyenException("No skinCode set.");
         if(!$merchantAccount)       throw new AdyenException("No merchantAccount set.");
@@ -501,10 +512,14 @@ class Adyen {
             "skinCode" => $this->getSkinCode()      
         );
         foreach ($requiredParams as $key => $value) {
-            if ($key == "paymentAmount" && $value < 1) {
-                throw new AdyenException("Invalid paymentAmount: zero.");
-            } elseif (!$value) {
-                throw new AdyenException("No {$key} set.");
+            if ($key == "paymentAmount") {
+                if (!$this->zero_auth_payments and $value < 1) {
+                    throw new AdyenException("Invalid paymentAmount: zero.");
+                }
+            } else {
+                if (!$value) {
+                    throw new AdyenException("No {$key} set.");
+                }
             }
         }
         
@@ -695,8 +710,9 @@ class Adyen {
         if(!$merchantAccount)       throw new AdyenException("No merchantAccount set.");
         if(!$merchantReference)     throw new AdyenException("No merchantReference set.");
         if(!$currencyCode)          throw new AdyenException("No Currency Code set.");
-        if(!$paymentAmount)         throw new AdyenException("No paymentAmount set.");
-        if($paymentAmount < 1)      throw new AdyenException("Invalid paymentAmount: zero."); 
+        if(!$this->zero_auth_payments and $paymentAmount < 1) {
+            throw new AdyenException("Invalid paymentAmount: zero.");
+        }
         if(!$shopperEmail)          throw new AdyenException("No shopperEmail set.");
         if(!$shopperReference)      throw new AdyenException("No shopperReference set.");
         
