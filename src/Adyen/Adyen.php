@@ -579,7 +579,6 @@ class Adyen {
 	        . $this->getShopperEmail()
 	        . $this->getShopperReference()
 	        . $this->getRecurringContract()
-	        . $this->getShopperStatement()
 	        . $this->getAllowedMethods()
 	        . $this->getBillingAddressType()
 	        . $this->getDeliveryAddressType()
