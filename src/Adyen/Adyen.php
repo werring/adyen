@@ -548,7 +548,6 @@ class Adyen
         $recurringContract = $this->getRecurringContract();
         $countryCode = $this->getCountryCode();
         $shopperStatement = $this->getShopperStatement();
-        $merchantSig = $this->getUrl();
         $orderData = $this->getOrderData();
         $shopperLocale = $this->getShopperLocale();
         $allowedMethods = $this->getAllowedMethods();
@@ -615,7 +614,7 @@ class Adyen
 
         if ($this->getIssuerId()) {
             $rv['issuerId']     = $this->getIssuerId();
-            $rv['brandcode']    = $this->getAllowedMethods();
+            $rv['brandCode']    = $this->getAllowedMethods();
         }
 
         $rv['merchantSig'] = $this->getMerchantSignature();
@@ -625,7 +624,6 @@ class Adyen
 
     public function getSha256HPPParams()
     {
-        global $TEMPLATE, $ARGS, $CONFIG, $DB;
         $hmacKey = $this->getSharedSecret();
 
         $requiredParams = [
